@@ -19,6 +19,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           branch=$(node scripts/release.mjs next)
-          git push origin "HEAD:refs/heads/$branch"
+          existing_sha=$(git ls-remote origin "refs/heads/$branch" | cut -f1)
+          if [[ -z "$existing_sha" ]]; then
+            git push origin "HEAD:refs/heads/$branch"
+          else
+            echo "Reusing $branch at $existing_sha" >> "$GITHUB_STEP_SUMMARY"
+          fi
           gh workflow run deploy.yml --ref "$branch"
           echo "Staging branch: $branch" >> "$GITHUB_STEP_SUMMARY"

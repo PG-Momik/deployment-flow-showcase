@@ -8,11 +8,17 @@ test('cut picks the next unused version from tags in the latest month', () => {
   assert.equal(nextReleaseBranch([], '2026.10'), 'release/2026.10.1');
 });
 
-test('cut refuses to create a second open release branch', () => {
-  assert.throws(
-    () => nextReleaseBranch(['refs/heads/release/2026.11.1'], '2026.11'),
-    /open release branch/,
+test('cut reuses the one open release branch', () => {
+  assert.equal(
+    nextReleaseBranch(['refs/heads/release/2026.11.1'], '2026.11'),
+    'release/2026.11.1',
   );
+});
+
+test('cut refuses to choose between multiple open release branches', () => {
+  assert.throws(() => nextReleaseBranch([
+    'refs/heads/release/2026.11.1', 'refs/heads/release/2026.11.2',
+  ], '2026.11'), /Multiple open release branches/);
 });
 
 test('ship selects the sole open release branch', () => {

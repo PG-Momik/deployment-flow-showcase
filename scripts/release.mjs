@@ -11,9 +11,7 @@ export function openReleaseBranch(refs) {
 }
 
 export function nextReleaseBranch(refs, currentMonth) {
-  if (refs.some(ref => releaseBranch.test(ref))) {
-    throw new Error('Ship or remove the open release branch before cutting another');
-  }
+  if (refs.some(ref => releaseBranch.test(ref))) return openReleaseBranch(refs);
   const versions = refs.map(ref => versionRef.exec(ref)).filter(Boolean);
   const month = [currentMonth, ...versions.map(match => match[1])].sort().at(-1);
   const number = Math.max(0, ...versions.filter(match => match[1] === month).map(match => Number(match[2]))) + 1;
