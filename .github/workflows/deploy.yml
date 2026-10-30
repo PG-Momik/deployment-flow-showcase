@@ -7,6 +7,9 @@ on:
 permissions:
   contents: read
   actions: read
+concurrency:
+  group: build-and-deploy-${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'main' || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 jobs:
   resolve:
     runs-on: ubuntu-latest

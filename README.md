@@ -5,6 +5,7 @@ A small, self-contained GitHub Actions lab for the [PROJECT-0531 trunk-based flo
 ## What to check
 
 - When a change reaches `main`, I should see a **dev** deployment with a built artifact.
+- When a newer merge reaches `main` before an earlier dev run finishes, the older run should cancel and the newest commit should deploy.
 - When I click Cut release branch, I should see the next `release/YYYY.MM.N`, a completed staging build, and a staging **deploy** job waiting for my approval.
 - When I click Ship to production with one open release branch, I should see its matching version tag, a GitHub Release, and a **production** deployment using the exact staged artifact, with no production build.
 - When staging has not successfully deployed the current branch tip, shipping should stop before tagging.
@@ -26,7 +27,7 @@ Create two PRs from separate branches based on `main`. Merge each with **Squash 
 
 After both merges, run `git fetch origin main` and `git log --oneline -5 origin/main`. You should see one new commit per PR, not all commits from the PR branches.
 
-Check **Actions → Build and deploy** after each merge. Each squash commit on `main` should get its own dev run. Then use **Cut release branch** to stage the final `main` commit.
+Check **Actions → Build and deploy** after each merge. Each squash commit on `main` should start a dev run; a newer run cancels an unfinished older one. Then use **Cut release branch** to stage the final `main` commit.
 
 ## Safety and scope
 
