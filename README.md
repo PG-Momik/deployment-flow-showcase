@@ -26,6 +26,8 @@ Create two PRs from separate branches based on `main`. Merge each with **Squash 
 
 After both merges, run `git fetch origin main` and `git log --oneline -5 origin/main`. You should see one new commit per PR, not all commits from the PR branches.
 
+Check **Actions → Build and deploy** after each merge. Each squash commit on `main` should get its own dev run. Then use **Cut release branch** to stage the final `main` commit.
+
 ## Safety and scope
 
 This lab uses one permanent branch, `main`. Use short feature branches and squash PRs into it. The cut and ship workflows request GitHub Environment approval, but the workflow files cannot configure reviewers or protect refs. Protect `main` with PR review, restrict creation of `release/*` and `v*` to the intended people and Actions, and prevent version tags from moving or being deleted in repository rulesets. Without those settings, a person with write access could push a version tag directly and trigger production.
