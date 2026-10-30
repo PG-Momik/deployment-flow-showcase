@@ -1,11 +1,6 @@
 name: Ship to production
 on:
   workflow_dispatch:
-    inputs:
-      release_branch:
-        description: 'Release branch, for example release/2026.11.1'
-        required: true
-        type: string
 permissions:
   contents: write
   actions: write
@@ -22,13 +17,12 @@ jobs:
       - name: Verify staging, tag, and deploy
         env:
           GH_TOKEN: ${{ github.token }}
-          BRANCH: ${{ inputs.release_branch }}
         run: |
-          [[ "$BRANCH" =~ ^release/[0-9]{4}\.[0-9]{2}\.[1-9][0-9]*$ ]] || { echo 'Expected release/YYYY.MM.N'; exit 1; }
-          git fetch origin "$BRANCH"
+          branch=$(node scripts/release.mjs open)
+          git fetch origin "$branch"
           sha=$(git rev-parse FETCH_HEAD)
-          tag="v${BRANCH#release/}"
-          bash scripts/get-staged-artifact.sh "$BRANCH" "$sha" "$RUNNER_TEMP/staged"
+          tag="v${branch#release/}"
+          bash scripts/get-staged-artifact.sh "$branch" "$sha" "$RUNNER_TEMP/staged"
           if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
             [[ "$(git rev-parse "$tag^{commit}")" == "$sha" ]] || { echo 'Tag points to another commit'; exit 1; }
           else
@@ -45,4 +39,5 @@ jobs:
           done
           [[ -n "$run_id" ]] || { echo 'Production run was not found'; exit 1; }
           gh run watch "$run_id" --exit-status
+          git push origin --delete "$branch"
           echo "Production tag: $tag at $sha" >> "$GITHUB_STEP_SUMMARY"

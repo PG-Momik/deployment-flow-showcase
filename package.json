@@ -4,6 +4,6 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "test": "node --test",
-    "lint": "node --check scripts/build.mjs && node --check scripts/resolve-ref.mjs && node --check test/resolve-ref.test.mjs"
+    "lint": "node --check scripts/build.mjs && node --check scripts/resolve-ref.mjs && node --check scripts/release.mjs && node --check test/resolve-ref.test.mjs && node --check test/release.test.mjs && bash -n scripts/get-staged-artifact.sh"
   }
 }

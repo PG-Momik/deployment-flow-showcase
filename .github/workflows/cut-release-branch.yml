@@ -1,11 +1,6 @@
 name: Cut release branch
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version, for example 2026.11.1'
-        required: true
-        type: string
 permissions:
   contents: write
   actions: write
@@ -22,14 +17,8 @@ jobs:
       - name: Create and deploy release branch
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ inputs.version }}
         run: |
-          [[ "$VERSION" =~ ^[0-9]{4}\.[0-9]{2}\.[1-9][0-9]*$ ]] || { echo 'Expected YYYY.MM.N'; exit 1; }
-          branch="release/$VERSION"
-          if git ls-remote --exit-code origin "refs/heads/$branch" >/dev/null; then
-            echo "$branch already exists"
-            exit 1
-          fi
+          branch=$(node scripts/release.mjs next)
           git push origin "HEAD:refs/heads/$branch"
           gh workflow run deploy.yml --ref "$branch"
           echo "Staging branch: $branch" >> "$GITHUB_STEP_SUMMARY"
