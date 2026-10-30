@@ -7,11 +7,18 @@
     <style>
       body { font: 18px system-ui, sans-serif; max-width: 42rem; margin: 10vh auto; padding: 0 1rem; line-height: 1.5; }
       code { background: #eee; padding: .15rem .3rem; }
+      ol { padding-left: 1.5rem; }
+      li + li { margin-top: .75rem; }
     </style>
   </head>
   <body>
-    <h1>Deployment flow showcase</h1>
-    <p>One trunk, a staging release branch, and a production version tag.</p>
+    <h1>From commit to production</h1>
+    <p>Follow one change from <code>main</code> through staging to a production version tag.</p>
+    <ol>
+      <li><strong>Dev:</strong> a squash merge into <code>main</code> starts a build and dev deploy.</li>
+      <li><strong>Staging:</strong> Cut release branch builds the release commit; a reviewer approves its deploy.</li>
+      <li><strong>Production:</strong> Ship to production tags and deploys that same staged build.</li>
+    </ol>
     <p>Commit: <code id="commit">loading</code></p>
     <script>
       fetch('./manifest.json').then(response => response.json()).then(manifest => {
