@@ -39,5 +39,8 @@ jobs:
           done
           [[ -n "$run_id" ]] || { echo 'Production run was not found'; exit 1; }
           gh run watch "$run_id" --exit-status
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --verify-tag --title "$tag" --generate-notes
+          fi
           git push origin --delete "$branch"
           echo "Production tag: $tag at $sha" >> "$GITHUB_STEP_SUMMARY"
