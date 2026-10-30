@@ -29,6 +29,8 @@ After both merges, run `git fetch origin main` and `git log --oneline -5 origin/
 
 Check **Actions → Build and deploy** after each merge. Each squash commit on `main` should start a dev run; a newer run cancels an unfinished older one. Then use **Cut release branch** to stage the final `main` commit.
 
+For the merge trial, each dev build waits two minutes so you can merge the next PR while it is running. The newest run should finish, and the delete-merged-branch workflow should remove each merged branch if it still exists.
+
 ## Safety and scope
 
 This lab uses one permanent branch, `main`. Use short feature branches and squash PRs into it. The cut and ship workflows request GitHub Environment approval, but the workflow files cannot configure reviewers or protect refs. Protect `main` with PR review, restrict creation of `release/*` and `v*` to the intended people and Actions, and prevent version tags from moving or being deleted in repository rulesets. Without those settings, a person with write access could push a version tag directly and trigger production.

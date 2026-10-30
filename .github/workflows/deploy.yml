@@ -31,6 +31,9 @@ jobs:
           fetch-depth: 0
       - id: source
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Leave time to merge the next trial PR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: sleep 120
       - run: npm test
       - run: npm run lint
       - name: Build for dev or staging
