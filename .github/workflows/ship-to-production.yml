@@ -1,0 +1,48 @@
+name: Ship to production
+on:
+  workflow_dispatch:
+    inputs:
+      release_branch:
+        description: 'Release branch, for example release/2026.11.1'
+        required: true
+        type: string
+permissions:
+  contents: write
+  actions: write
+concurrency: ship-to-production
+jobs:
+  ship:
+    runs-on: ubuntu-latest
+    environment: ship-to-production
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify staging, tag, and deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ inputs.release_branch }}
+        run: |
+          [[ "$BRANCH" =~ ^release/[0-9]{4}\.[0-9]{2}\.[1-9][0-9]*$ ]] || { echo 'Expected release/YYYY.MM.N'; exit 1; }
+          git fetch origin "$BRANCH"
+          sha=$(git rev-parse FETCH_HEAD)
+          tag="v${BRANCH#release/}"
+          bash scripts/get-staged-artifact.sh "$BRANCH" "$sha" "$RUNNER_TEMP/staged"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            [[ "$(git rev-parse "$tag^{commit}")" == "$sha" ]] || { echo 'Tag points to another commit'; exit 1; }
+          else
+            git -c user.name="${GITHUB_ACTOR}" -c user.email="${GITHUB_ACTOR}@users.noreply.github.com" tag -a "$tag" -m "Release ${tag#v} approved by ${GITHUB_ACTOR}" "$sha"
+            git push origin "refs/tags/$tag"
+          fi
+          started=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          gh workflow run deploy.yml --ref "$tag"
+          run_id=''
+          for attempt in {1..20}; do
+            run_id=$(gh run list --workflow deploy.yml --limit 30 --json databaseId,headBranch,headSha,event,createdAt | jq -r --arg tag "$tag" --arg sha "$sha" --arg started "$started" 'first(.[] | select(.headBranch == $tag and .headSha == $sha and .event == "workflow_dispatch" and .createdAt >= $started) | .databaseId) // empty')
+            [[ -n "$run_id" ]] && break
+            sleep 3
+          done
+          [[ -n "$run_id" ]] || { echo 'Production run was not found'; exit 1; }
+          gh run watch "$run_id" --exit-status
+          echo "Production tag: $tag at $sha" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,9 @@
+{
+  "name": "deployment-flow-showcase",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test",
+    "lint": "node --check scripts/build.mjs && node --check scripts/resolve-ref.mjs && node --check test/resolve-ref.test.mjs"
+  }
+}

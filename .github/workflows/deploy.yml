@@ -1,0 +1,67 @@
+name: Build and deploy
+on:
+  push:
+    branches: [main, 'release/**']
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.ref.outputs.environment }}
+      branch: ${{ steps.ref.outputs.branch }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: ref
+        run: node scripts/resolve-ref.mjs "$GITHUB_REF" >> "$GITHUB_OUTPUT"
+  deploy:
+    needs: resolve
+    runs-on: ubuntu-latest
+    environment: ${{ needs.resolve.outputs.environment }}
+    concurrency:
+      group: deploy-${{ needs.resolve.outputs.environment }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: source
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - run: npm test
+      - run: npm run lint
+      - name: Build for dev or staging
+        if: needs.resolve.outputs.environment != 'production'
+        run: npm run build
+      - name: Check production tag is the staged branch tip
+        if: needs.resolve.outputs.environment == 'production'
+        env:
+          BRANCH: ${{ needs.resolve.outputs.branch }}
+          SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          [[ "$GITHUB_EVENT_NAME" != workflow_dispatch || "$GITHUB_ACTOR" == 'github-actions[bot]' ]] || { echo 'Use Ship to production to start a tag deploy'; exit 1; }
+          git fetch origin "$BRANCH"
+          [[ "$(git rev-parse FETCH_HEAD)" == "$SHA" ]] || { echo 'Tag is not on the release branch tip'; exit 1; }
+      - name: Promote the exact staging build
+        if: needs.resolve.outputs.environment == 'production'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ needs.resolve.outputs.branch }}
+          SHA: ${{ steps.source.outputs.sha }}
+        run: bash scripts/get-staged-artifact.sh "$BRANCH" "$SHA" dist
+      - name: Save deployment artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ needs.resolve.outputs.environment }}-${{ steps.source.outputs.sha }}
+          path: dist/
+          retention-days: 30
+      - name: Record deployment
+        run: |
+          echo "### $ENVIRONMENT deployment" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit: $SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo "Artifact: build-$ENVIRONMENT-$SHA" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
+          SHA: ${{ steps.source.outputs.sha }}
