@@ -17,13 +17,11 @@ jobs:
       - uses: actions/checkout@v4
       - id: ref
         run: node scripts/resolve-ref.mjs "$GITHUB_REF" >> "$GITHUB_OUTPUT"
-  deploy:
+  build:
     needs: resolve
     runs-on: ubuntu-latest
-    environment: ${{ needs.resolve.outputs.environment }}
-    concurrency:
-      group: deploy-${{ needs.resolve.outputs.environment }}
-      cancel-in-progress: false
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -51,17 +49,36 @@ jobs:
           BRANCH: ${{ needs.resolve.outputs.branch }}
           SHA: ${{ steps.source.outputs.sha }}
         run: bash scripts/get-staged-artifact.sh "$BRANCH" "$SHA" dist
-      - name: Save deployment artifact
+      - name: Save build artifact
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ needs.resolve.outputs.environment }}-${{ steps.source.outputs.sha }}
+          path: dist/
+          retention-days: 30
+  deploy:
+    needs: [resolve, build]
+    runs-on: ubuntu-latest
+    environment: ${{ needs.resolve.outputs.environment }}
+    concurrency:
+      group: deploy-${{ needs.resolve.outputs.environment }}
+      cancel-in-progress: false
+    steps:
+      - name: Get approved build
+        uses: actions/download-artifact@v4
+        with:
+          name: build-${{ needs.resolve.outputs.environment }}-${{ needs.build.outputs.sha }}
+          path: dist/
+      - name: Save deployed artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployed-${{ needs.resolve.outputs.environment }}-${{ needs.build.outputs.sha }}
           path: dist/
           retention-days: 30
       - name: Record deployment
         run: |
           echo "### $ENVIRONMENT deployment" >> "$GITHUB_STEP_SUMMARY"
           echo "Commit: $SHA" >> "$GITHUB_STEP_SUMMARY"
-          echo "Artifact: build-$ENVIRONMENT-$SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo "Artifact: deployed-$ENVIRONMENT-$SHA" >> "$GITHUB_STEP_SUMMARY"
         env:
           ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
-          SHA: ${{ steps.source.outputs.sha }}
+          SHA: ${{ needs.build.outputs.sha }}

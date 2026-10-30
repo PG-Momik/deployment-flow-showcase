@@ -5,7 +5,7 @@ A small, self-contained GitHub Actions lab for the [PROJECT-0531 trunk-based flo
 ## What to check
 
 - When a change reaches `main`, I should see a **dev** deployment with a built artifact.
-- When I click Cut release branch, I should see the next `release/YYYY.MM.N` and a **staging** deployment at that branch tip.
+- When I click Cut release branch, I should see the next `release/YYYY.MM.N`, a completed staging build, and a staging **deploy** job waiting for my approval.
 - When I click Ship to production with one open release branch, I should see its matching version tag and a **production** deployment using the exact staged artifact, with no production build.
 - When staging has not successfully deployed the current branch tip, shipping should stop before tagging.
 - When there is no open release branch or more than one, shipping should stop without choosing a branch.
@@ -13,10 +13,10 @@ A small, self-contained GitHub Actions lab for the [PROJECT-0531 trunk-based flo
 ## Try it on GitHub
 
 1. Create an empty repository in your personal account, then push this repo's `main` branch. In repository settings, give Actions read and write permissions.
-2. Create environments named `dev`, `staging`, `production`, `cut-release-branch`, and `ship-to-production`. Add reviewers to the two approval environments if your GitHub plan allows it. Limit the staging environment to `release/*` and production to `v*` tags when available.
-3. In **Actions → Cut release branch → Run workflow**, leave **Use workflow from** on `main` and click **Run workflow**. The job picks the next unused monthly version, pushes its branch, and explicitly starts **Build and deploy** because a workflow-token push does not trigger another workflow. If a release branch is already open, this button keeps its commit unchanged and starts staging again. Wait for the staging run to pass. It uploads `build-staging-<commit SHA>`.
-4. In **Actions → Ship to production → Run workflow**, leave **Use workflow from** on `main` and click **Run workflow**. The job finds the one open release branch, checks that staging succeeded at its tip, creates the matching version tag, starts the production run, and waits for it. The production run downloads the staging artifact and uploads it as `build-production-<same commit SHA>`. The ship job then deletes the release branch.
-5. Compare the `sha` and `index.html` files in the staging and production artifacts. They should be identical. The **Build and deploy** run summaries show the environment and commit.
+2. Create environments named `dev`, `staging`, `production`, `cut-release-branch`, and `ship-to-production`. In the `staging` environment's protection rules, add your account as a **required reviewer** and allow self-review if GitHub offers that setting. Without a required reviewer, GitHub starts the deploy job immediately. Add reviewers to the cut and ship approval environments if your GitHub plan allows it. Limit staging to `release/*` and production to `v*` tags when available.
+3. In **Actions → Cut release branch → Run workflow**, leave **Use workflow from** on `main` and click **Run workflow**. The job picks the next unused monthly version, pushes its branch, and explicitly starts **Build and deploy** because a workflow-token push does not trigger another workflow. If a release branch is already open, this button keeps its commit unchanged and starts staging again. The staging `build` job uploads `build-staging-<commit SHA>` and completes. On that run page, click **Review deployments** to approve the waiting `deploy` job.
+4. After the staging run passes, open **Actions → Ship to production → Run workflow**, leave **Use workflow from** on `main`, and click **Run workflow**. The job finds the one open release branch, checks that staging succeeded at its tip, creates the matching version tag, starts the production run, and waits for it. The production build job copies the staging artifact without rebuilding and the production deploy job saves `deployed-production-<same commit SHA>`. The ship job then deletes the release branch.
+5. Compare the `sha` and `index.html` files in the staging build and production deployed artifacts. They should be identical. The **Build and deploy** run summaries show the environment and commit.
 
 Run `npm test`, `npm run lint`, and `npm run build` locally. The page in `dist/` is the same deployable content the workflows upload.
 
