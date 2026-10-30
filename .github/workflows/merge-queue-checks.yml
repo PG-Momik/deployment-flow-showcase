@@ -1,0 +1,17 @@
+name: PR and merge queue checks
+on:
+  pull_request:
+    branches: [main]
+  merge_group:
+    types: [checks_requested]
+permissions:
+  contents: read
+jobs:
+  verify:
+    name: Verify merge candidate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test
+      - run: npm run lint
+      - run: npm run build

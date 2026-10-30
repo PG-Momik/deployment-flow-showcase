@@ -31,6 +31,10 @@ Check **Actions → Build and deploy** after each merge. Each squash commit on `
 
 For the merge trial, each dev build waits two minutes so you can merge the next PR while it is running. The newest run should finish, and the delete-merged-branch workflow should remove each merged branch if it still exists.
 
+## Merge queue
+
+The **Verify merge candidate** check runs on PRs and merge queue groups, before a change reaches `main`. Require that check and enable merge queue in the `main` branch rules on GitHub. Choose squash merging there to keep one commit per PR. Repository settings control the queue; this workflow only supplies its required check. If **Require merge queue** is missing, check whether this repository's ownership and plan support it.
+
 ## Safety and scope
 
 This lab uses one permanent branch, `main`. Use short feature branches and squash PRs into it. The cut and ship workflows request GitHub Environment approval, but the workflow files cannot configure reviewers or protect refs. Protect `main` with PR review, restrict creation of `release/*` and `v*` to the intended people and Actions, and prevent version tags from moving or being deleted in repository rulesets. Without those settings, a person with write access could push a version tag directly and trigger production.
