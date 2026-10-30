@@ -10,8 +10,8 @@
     </style>
   </head>
   <body>
-    <h1>Deployment flow showcase</h1>
-    <p>One trunk, a staging release branch, and a production version tag.</p>
+    <h1>From commit to production</h1>
+    <p>Follow one change from <code>main</code> through staging to a production version tag.</p>
     <p>Commit: <code id="commit">loading</code></p>
     <script>
       fetch('./manifest.json').then(response => response.json()).then(manifest => {
